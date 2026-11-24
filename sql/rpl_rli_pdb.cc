@@ -523,12 +523,11 @@ bool Slave_worker::read_info(Rpl_info_handler *from) {
       !!from->get_info(&temp_checkpoint_master_log_pos, 0UL) ||
       !!from->get_info(&temp_checkpoint_seqno, 0UL) ||
       !!from->get_info(&nbytes, 0UL) ||
+      nbytes > no_bytes_in_map(&group_executed) ||
       !!from->get_info(buffer, (size_t)nbytes, (uchar *)nullptr) ||
       /* default is empty string */
       !!from->get_info(channel, sizeof(channel), ""))
     return true;
-
-  assert(nbytes <= no_bytes_in_map(&group_executed));
 
   internal_id = (uint)temp_internal_id;
   group_relay_log_pos = temp_group_relay_log_pos;
@@ -1497,7 +1496,6 @@ bool Slave_worker::retry_transaction(my_off_t start_relay_pos,
             char const act[] =
                 "now SIGNAL signal.rpl_ps_tables_worker_retry_pause "
                 "WAIT_FOR signal.rpl_ps_tables_worker_retry_continue";
-            assert(opt_debug_sync_timeout > 0);
             // we can't add the usual assert here because thd->is_error()
             // is true (and that's OK)
             debug_sync_set_action(thd, STRING_WITH_LEN(act));
@@ -2173,7 +2171,6 @@ int slave_worker_exec_job_group(Slave_worker *worker, Relay_log_info *rli) {
       const char act[] =
           "now SIGNAL signal.rpl_ps_tables_apply_before "
           "WAIT_FOR signal.rpl_ps_tables_apply_finish";
-      assert(opt_debug_sync_timeout > 0);
       assert(!debug_sync_set_action(current_thd, STRING_WITH_LEN(act)));
     };);
     if (ev->get_type_code() == mysql::binlog::event::QUERY_EVENT &&
@@ -2191,7 +2188,6 @@ int slave_worker_exec_job_group(Slave_worker *worker, Relay_log_info *rli) {
       const char act[] =
           "now SIGNAL signal.rpl_ps_tables_apply_after_finish "
           "WAIT_FOR signal.rpl_ps_tables_apply_continue";
-      assert(opt_debug_sync_timeout > 0);
       assert(!debug_sync_set_action(current_thd, STRING_WITH_LEN(act)));
     };);
   }

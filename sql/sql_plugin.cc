@@ -1864,7 +1864,7 @@ static void plugin_load(MEM_ROOT *tmp_root, int *argc, char **argv) {
   DBUG_TRACE;
 
   Table_ref tables("mysql", "plugin", TL_READ);
-  new_thd->thread_stack = (char *)&tables;
+  new_thd->capture_stack_base(&tables);
   new_thd->store_globals();
   const LEX_CSTRING db_lex_cstr = {STRING_WITH_LEN("mysql")};
   new_thd->set_db(db_lex_cstr);
@@ -3049,7 +3049,7 @@ static int construct_options(MEM_ROOT *mem_root, st_plugin_int *tmp,
   char *comment = (char *)mem_root->Alloc(max_comment_len + 1);
   char *optname;
 
-  int index = 0, offset = 0;
+  int offset = 0;
   SYS_VAR *opt, **plugin_option;
   st_bookmark *v;
 
@@ -3115,7 +3115,7 @@ static int construct_options(MEM_ROOT *mem_root, st_plugin_int *tmp,
   */
 
   for (plugin_option = tmp->plugin->system_vars;
-       plugin_option && *plugin_option; plugin_option++, index++) {
+       plugin_option && *plugin_option; plugin_option++) {
     opt = *plugin_option;
     if (!(opt->flags & PLUGIN_VAR_THDLOCAL)) continue;
     if (!(register_var(plugin_name_ptr, opt->name, opt->flags))) continue;
@@ -3163,7 +3163,7 @@ static int construct_options(MEM_ROOT *mem_root, st_plugin_int *tmp,
   }
 
   for (plugin_option = tmp->plugin->system_vars;
-       plugin_option && *plugin_option; plugin_option++, index++) {
+       plugin_option && *plugin_option; plugin_option++) {
     switch ((opt = *plugin_option)->flags & PLUGIN_VAR_TYPEMASK) {
       case PLUGIN_VAR_BOOL:
         if (!opt->check) opt->check = check_func_bool;
